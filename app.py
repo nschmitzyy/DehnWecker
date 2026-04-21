@@ -1,110 +1,153 @@
-
 import streamlit as st
 import time
 
 # --- Seite Konfiguration ---
-st.set_page_config(page_title="Wald-Dehn-Timer", layout="centered")
+st.set_page_config(page_title="FlipClock Timer", layout="centered")
 
-# --- Custom CSS für das Wald-Design ---
+# --- Custom CSS für FlipClock & Schwarz/Weiß Design ---
 st.markdown("""
     <style>
-    /* Hintergrund des Hauptfensters (Wald-Farben) */
+    /* Gesamter Hintergrund Schwarz */
     .stApp {
-        background: linear-gradient(to bottom, #2d5a27, #1e3a1a);
-        color: #f0f2f6;
+        background-color: #000000;
+        color: #ffffff;
     }
 
-    /* Styling für den "Fluss" (Fortschrittsbalken) */
-    .stProgress > div > div > div > div {
-        background-color: #4da6ff; /* Hellblau wie Wasser */
-        background-image: linear-gradient(90deg, #4da6ff 0%, #0066cc 100%);
+    /* Input Felder Styling */
+    .stNumberInput div div input {
+        background-color: #111;
+        color: white !important;
+        border: 1px solid #333;
+    }
+
+    /* FlipClock Container */
+    .flip-container {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 50px;
+        font-family: 'Courier New', Courier, monospace;
+    }
+
+    /* Einzelne Zeit-Blöcke */
+    .time-block {
+        background-color: #222;
         border-radius: 10px;
-    }
-    
-    /* Container für den Fluss */
-    .stProgress {
-        height: 25px;
-        border-radius: 15px;
-        background-color: #3d2b1f; /* Dunkelbraun wie Erde/Ufer */
-        border: 2px solid #5d4037;
+        padding: 20px;
+        min-width: 120px;
+        text-align: center;
+        border: 1px solid #444;
     }
 
-    /* Überschriften-Styling */
-    h1, h2, h3 {
-        color: #e8f5e9 !important;
-        font-family: 'Trebuchet MS', sans-serif;
+    .time-val {
+        font-size: 80px;
+        font-weight: bold;
+        color: #ffffff;
+        line-height: 1;
     }
-    
-    /* Buttons wie Moos/Steine */
+
+    .time-label {
+        font-size: 14px;
+        text-transform: uppercase;
+        color: #888;
+        margin-top: 5px;
+    }
+
+    /* Button Styling */
     .stButton>button {
-        background-color: #4caf50;
-        color: white;
-        border-radius: 20px;
-        border: 2px solid #2e7d32;
-        transition: 0.3s;
+        width: 100%;
+        background-color: #ffffff;
+        color: #000000;
+        border-radius: 5px;
+        font-weight: bold;
+        border: none;
+        padding: 10px;
     }
     .stButton>button:hover {
-        background-color: #81c784;
-        border-color: #4caf50;
+        background-color: #cccccc;
+        color: #000000;
     }
     </style>
-    """, unsafe_allow_stdio=True)
+    """, unsafe_allow_html=True)
 
 # --- Session State Initialisierung ---
 if 'mode' not in st.session_state:
     st.session_state.mode = "setup"
 if 'start_time' not in st.session_state:
     st.session_state.start_time = None
+if 'total_seconds' not in st.session_state:
+    st.session_state.total_seconds = 0
 
-# --- Layout & Logik ---
-st.title("🌲 Der digitale Wald-Pfad")
-
+# --- MODUS 1: Setup (Zeit auswählen) ---
 if st.session_state.mode == "setup":
-    st.markdown("### Wie lange möchtest du im Wald verweilen?")
-    minutes = st.number_input("Minuten bis zur Dehnung:", min_value=1, value=45)
+    st.markdown("<h1 style='text-align: center;'>TIMER SETUP</h1>", unsafe_allow_html=True)
     
-    if st.button("Pfad betreten"):
-        st.session_state.duration_sec = minutes * 60
-        st.session_state.start_time = time.time()
-        st.session_state.mode = "timer"
-        st.rerun()
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        hours = st.number_input("Stunden", min_value=0, max_value=23, value=0)
+    with col2:
+        minutes = st.number_input("Minuten", min_value=0, max_value=59, value=45)
+    with col3:
+        seconds = st.number_input("Sekunden", min_value=0, max_value=59, value=0)
+    
+    if st.button("STARTEN"):
+        total = (hours * 3600) + (minutes * 60) + seconds
+        if total > 0:
+            st.session_state.total_seconds = total
+            st.session_state.start_time = time.time()
+            st.session_state.mode = "timer"
+            st.rerun()
+        else:
+            st.warning("Bitte stelle eine Zeit ein.")
 
+# --- MODUS 2: FlipClock Timer ---
 elif st.session_state.mode == "timer":
     elapsed = time.time() - st.session_state.start_time
-    remaining = st.session_state.duration_sec - elapsed
+    remaining = max(0, st.session_state.total_seconds - int(elapsed))
     
     if remaining <= 0:
         st.session_state.mode = "stretch"
         st.rerun()
-    else:
-        st.subheader("💧 Der Fluss der Zeit fließt...")
-        
-        # Der "Fluss" (Progress Bar)
-        progress = min(elapsed / st.session_state.duration_sec, 1.0)
-        st.progress(progress)
-        
-        mins, secs = divmod(int(remaining), 60)
-        st.write(f"⏳ Noch **{mins:02d}:{secs:02d}** bis zur Rast (Dehnung).")
-        
-        if st.button("Wald verlassen (Abbrechen)"):
-            st.session_state.mode = "setup"
-            st.rerun()
-        
-        time.sleep(1)
-        st.rerun()
-
-elif st.session_state.mode == "stretch":
-    st.markdown("## 🛑 Zeit für eine Lichtung!")
-    st.write("Der Fluss ist am Meer angekommen. Dehne dich jetzt (Vorwärtsbeuge).")
     
-    # Platzhalter für MediaPipe
-    st.markdown("""
-        <div style="border: 5px solid #4caf50; border-radius: 10px; padding: 20px; text-align: center; background-color: rgba(255,255,255,0.1);">
-            <p>📷 Kamera-Aktivierung...</p>
+    # Zeit berechnen für Anzeige
+    h = remaining // 3600
+    m = (remaining % 3600) // 60
+    s = remaining % 60
+
+    # FlipClock HTML Rendering
+    st.markdown(f"""
+        <div class="flip-container">
+            <div class="time-block">
+                <div class="time-val">{h:02d}</div>
+                <div class="time-label">STUNDEN</div>
+            </div>
+            <div class="time-block">
+                <div class="time-val">{m:02d}</div>
+                <div class="time-label">MINUTEN</div>
+            </div>
+            <div class="time-block">
+                <div class="time-val">{s:02d}</div>
+                <div class="time-label">SEKUNDEN</div>
+            </div>
         </div>
     """, unsafe_allow_html=True)
+
+    st.write("<br><br>", unsafe_allow_html=True)
+    if st.button("ABBRECHEN"):
+        st.session_state.mode = "setup"
+        st.rerun()
     
-    if st.button("Dehnung abgeschlossen 🌿"):
-        st.balloons()
+    time.sleep(1)
+    st.rerun()
+
+# --- MODUS 3: Stretching ---
+elif st.session_state.mode == "stretch":
+    st.markdown("<h1 style='text-align: center; color: red;'>ZEIT ABGELAUFEN</h1>", unsafe_allow_html=True)
+    st.write("<p style='text-align: center;'>Bitte führe jetzt die Vorwärtsbeuge aus.</p>", unsafe_allow_html=True)
+    
+    # Hier kommt später MediaPipe rein
+    st.markdown("<div style='height: 300px; border: 2px dashed #444; display: flex; align-items: center; justify-content: center;'>KAMERA AKTIV...</div>", unsafe_allow_html=True)
+    
+    if st.button("FERTIG"):
         st.session_state.mode = "setup"
         st.rerun()
