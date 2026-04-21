@@ -4,73 +4,84 @@ import time
 # --- Seite Konfiguration ---
 st.set_page_config(page_title="FlipClock Timer", layout="centered")
 
-# --- Custom CSS für FlipClock & Schwarz/Weiß Design ---
+# --- Custom CSS für echten Flip-Look ---
 st.markdown("""
     <style>
-    /* Gesamter Hintergrund Schwarz */
+    /* Hintergrund Schwarz */
     .stApp {
         background-color: #000000;
         color: #ffffff;
-    }
-
-    /* Input Felder Styling */
-    .stNumberInput div div input {
-        background-color: #111;
-        color: white !important;
-        border: 1px solid #333;
     }
 
     /* FlipClock Container */
     .flip-container {
         display: flex;
         justify-content: center;
-        gap: 15px;
+        gap: 20px;
         margin-top: 50px;
-        font-family: 'Courier New', Courier, monospace;
+        font-family: 'Helvetica', sans-serif;
     }
 
-    /* Einzelne Zeit-Blöcke */
-    .time-block {
-        background-color: #222;
-        border-radius: 10px;
-        padding: 20px;
-        min-width: 120px;
-        text-align: center;
-        border: 1px solid #444;
+    /* Der Karten-Block */
+    .flip-card {
+        background-color: #1a1a1a;
+        border-radius: 8px;
+        width: 140px;
+        height: 160px;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: 1px solid #333;
+        box-shadow: 0px 10px 20px rgba(0,0,0,0.5);
+    }
+
+    /* Der Flip-Strich in der Mitte */
+    .flip-card::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: rgba(255, 255, 255, 0.4); /* Dünner weißer Strich */
+        z-index: 2;
     }
 
     .time-val {
-        font-size: 80px;
-        font-weight: bold;
+        font-size: 110px;
+        font-weight: 900;
         color: #ffffff;
-        line-height: 1;
+        letter-spacing: -2px;
     }
 
     .time-label {
-        font-size: 14px;
-        text-transform: uppercase;
-        color: #888;
-        margin-top: 5px;
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+
+    /* Eingabefelder Styling */
+    .stNumberInput div div input {
+        background-color: #111 !important;
+        color: white !important;
     }
 
     /* Button Styling */
     .stButton>button {
-        width: 100%;
         background-color: #ffffff;
         color: #000000;
-        border-radius: 5px;
+        border-radius: 4px;
         font-weight: bold;
         border: none;
-        padding: 10px;
-    }
-    .stButton>button:hover {
-        background-color: #cccccc;
-        color: #000000;
+        padding: 10px 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Session State Initialisierung ---
+# --- Session State ---
 if 'mode' not in st.session_state:
     st.session_state.mode = "setup"
 if 'start_time' not in st.session_state:
@@ -78,76 +89,68 @@ if 'start_time' not in st.session_state:
 if 'total_seconds' not in st.session_state:
     st.session_state.total_seconds = 0
 
-# --- MODUS 1: Setup (Zeit auswählen) ---
+# --- SETUP MODUS ---
 if st.session_state.mode == "setup":
-    st.markdown("<h1 style='text-align: center;'>TIMER SETUP</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; margin-bottom: 30px;'>ZEIT EINSTELLEN</h2>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     with col1:
-        hours = st.number_input("Stunden", min_value=0, max_value=23, value=0)
+        h_in = st.number_input("Stunden", 0, 23, 0)
     with col2:
-        minutes = st.number_input("Minuten", min_value=0, max_value=59, value=45)
+        m_in = st.number_input("Minuten", 0, 59, 45)
     with col3:
-        seconds = st.number_input("Sekunden", min_value=0, max_value=59, value=0)
+        s_in = st.number_input("Sekunden", 0, 59, 0)
     
-    if st.button("STARTEN"):
-        total = (hours * 3600) + (minutes * 60) + seconds
+    if st.button("START"):
+        total = (h_in * 3600) + (m_in * 60) + s_in
         if total > 0:
             st.session_state.total_seconds = total
             st.session_state.start_time = time.time()
             st.session_state.mode = "timer"
             st.rerun()
-        else:
-            st.warning("Bitte stelle eine Zeit ein.")
 
-# --- MODUS 2: FlipClock Timer ---
+# --- TIMER MODUS ---
 elif st.session_state.mode == "timer":
     elapsed = time.time() - st.session_state.start_time
-    remaining = max(0, st.session_state.total_seconds - int(elapsed))
+    rem = max(0, st.session_state.total_seconds - int(elapsed))
     
-    if remaining <= 0:
+    if rem <= 0:
         st.session_state.mode = "stretch"
         st.rerun()
     
-    # Zeit berechnen für Anzeige
-    h = remaining // 3600
-    m = (remaining % 3600) // 60
-    s = remaining % 60
+    hrs = rem // 3600
+    mins = (rem % 3600) // 60
+    secs = rem % 60
 
-    # FlipClock HTML Rendering
+    # FlipClock HTML
     st.markdown(f"""
         <div class="flip-container">
-            <div class="time-block">
-                <div class="time-val">{h:02d}</div>
-                <div class="time-label">STUNDEN</div>
+            <div>
+                <div class="flip-card"><div class="time-val">{hrs:02d}</div></div>
+                <div class="time-label">HOURS</div>
             </div>
-            <div class="time-block">
-                <div class="time-val">{m:02d}</div>
-                <div class="time-label">MINUTEN</div>
+            <div>
+                <div class="flip-card"><div class="time-val">{mins:02d}</div></div>
+                <div class="time-label">MINUTES</div>
             </div>
-            <div class="time-block">
-                <div class="time-val">{s:02d}</div>
-                <div class="time-label">SEKUNDEN</div>
+            <div>
+                <div class="flip-card"><div class="time-val">{secs:02d}</div></div>
+                <div class="time-label">SECONDS</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
     st.write("<br><br>", unsafe_allow_html=True)
-    if st.button("ABBRECHEN"):
+    if st.button("RESET"):
         st.session_state.mode = "setup"
         st.rerun()
     
     time.sleep(1)
     st.rerun()
 
-# --- MODUS 3: Stretching ---
+# --- STRETCH MODUS ---
 elif st.session_state.mode == "stretch":
-    st.markdown("<h1 style='text-align: center; color: red;'>ZEIT ABGELAUFEN</h1>", unsafe_allow_html=True)
-    st.write("<p style='text-align: center;'>Bitte führe jetzt die Vorwärtsbeuge aus.</p>", unsafe_allow_html=True)
-    
-    # Hier kommt später MediaPipe rein
-    st.markdown("<div style='height: 300px; border: 2px dashed #444; display: flex; align-items: center; justify-content: center;'>KAMERA AKTIV...</div>", unsafe_allow_html=True)
-    
+    st.markdown("<h1 style='text-align: center; color: red;'>DEHNEN!</h1>", unsafe_allow_html=True)
     if st.button("FERTIG"):
         st.session_state.mode = "setup"
         st.rerun()
