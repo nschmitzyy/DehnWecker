@@ -1,10 +1,3 @@
-Das ist eine fantastische Idee! Ein "Wald-Layout" verleiht der App eine beruhigende, naturverbundene Atmosphäre – perfekt für ein Stretching-Workout.
-
-Da Streamlit von Haus aus eher schlicht ist, nutzen wir Custom CSS, um das Aussehen komplett zu verändern. Wir können Hintergründe anpassen und den Fortschrittsbalken (deinen Fluss) stylen.
-
-Hier ist der komplette Code für dein Wald-Design:
-1. Die Datei: app.py
-Python
 
 import streamlit as st
 import time
