@@ -1,32 +1,68 @@
 import streamlit as st
 import time
 
-# --- Seite Konfiguration ---
-st.set_page_config(
-    page_title="Stretching Timer Layout",
-    page_icon="🧘",
-    layout="wide"
-)
+# --- Konfiguration ---
+st.set_page_config(page_title="Dehn-Timer", layout="centered")
 
-# --- Layout ---
-st.title("🧘 AI Stretching Trainer")
-st.write("Dies ist ein Layout-Entwurf ohne KI-Logik.")
+# Initialisierung der Zustände
+if 'mode' not in st.session_state:
+    st.session_state.mode = "setup"  # Modi: setup, timer, stretch
+if 'start_time' not in st.session_state:
+    st.session_state.start_time = None
 
-col_video, col_stats = st.columns([2, 1])
+# --- FUNKTIONEN ---
+def start_timer(duration_min):
+    st.session_state.duration_sec = duration_min * 60
+    st.session_state.start_time = time.time()
+    st.session_state.mode = "timer"
 
-with col_video:
-    st.subheader("Kamera-Vorschau")
-    # Ein Platzhalter-Bild statt einer echten Kamera
-    st.image("https://via.placeholder.com/640x480.png?text=Kamera+Vorschau+Layout", use_container_width=True)
-    st.info("Hier wird später dein Video-Feed mit MediaPipe-Analyse zu sehen sein.")
+def reset_app():
+    st.session_state.mode = "setup"
+    st.session_state.start_time = None
 
-with col_stats:
-    st.subheader("Workout Status")
-    st.metric(label="Ziel-Winkel", value="< 135°")
-    st.metric(label="Zeit", value="00:00")
+# --- LAYOUT & LOGIK ---
+st.title("🧘 Dein Dehn-Assistent")
+
+# MODUS 1: Setup (Timer einstellen)
+if st.session_state.mode == "setup":
+    st.write("Wie lange möchtest du am Handy arbeiten, bevor du dich dehnen musst?")
+    minutes = st.number_input("Minuten:", min_value=1, max_value=120, value=45)
+    if st.button("Timer starten"):
+        start_timer(minutes)
+        st.rerun()
+
+# MODUS 2: Timer läuft
+elif st.session_state.mode == "timer":
+    elapsed = time.time() - st.session_state.start_time
+    remaining = st.session_state.duration_sec - elapsed
     
-    st.write("Fortschritt:")
-    st.progress(0)
+    if remaining <= 0:
+        st.session_state.mode = "stretch"
+        st.rerun()
+    else:
+        st.subheader("⏳ Fokus-Zeit aktiv")
+        st.metric("Verbleibende Zeit", f"{int(remaining // 60):02d}:{int(remaining % 60):02d}")
+        st.progress(min(elapsed / st.session_state.duration_sec, 1.0))
+        
+        if st.button("Abbrechen"):
+            reset_app()
+            st.rerun()
+        
+        # Automatische Aktualisierung alle Sekunde
+        time.sleep(1)
+        st.rerun()
+
+# MODUS 3: Dehnen (Die "Sperre")
+elif st.session_state.mode == "stretch":
+    st.error("🚨 ZEIT ABGELAUFEN! 🚨")
+    st.header("Übung: Vorwärtsbeuge")
+    st.write("Bitte dehne dich jetzt, um den Timer zu beenden.")
     
-    if st.button("Simulation starten"):
-        st.write("Simuliere Dehnung...")
+    # Platzhalter für MediaPipe Kamera-Analyse
+    st.image("https://via.placeholder.com/640x480.png?text=Kamera+wird+aktiviert...", use_container_width=True)
+    
+    # In einem späteren Schritt ersetzen wir diesen Button durch die MediaPipe-Logik
+    if st.button("Ich habe mich gedehnt (Fertig)"):
+        st.balloons()
+        reset_app()
+        st.rerun()
